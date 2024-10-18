@@ -11,11 +11,12 @@ function applyCase(word, casing) {
 }
 
 class WFont {
-    constructor(name, url, style = null) {
+    constructor(name, url, style = null, opentypeFont = null) {
         this.name = name;
         this.url = url;
         this.style = style;
-        this.fullFontName = url ? name : `${name} ${style}`.trim();
+        this.opentypeFont = opentypeFont;
+        this.fullFontName = name;
         this.loading = false;
         this.loaded = false;
         this.error = false;
@@ -29,17 +30,20 @@ class WFont {
             this.loaded = false;
             this.loading = true;
 
-            if (this.url) {
+            if (this.opentypeFont) {
+                // Local font loaded with OpenType.js
+                this.loaded = true;
+            } else if (this.url) {
                 // Load uploaded font
                 const font = new FontFace(this.name, `url(${this.url})`);
                 await font.load();
                 document.fonts.add(font);
+                this.loaded = true;
             } else {
-                // For local fonts, we'll just check if it's available
+                // For local fonts without OpenType.js object, we'll just check if it's available
                 await this.checkLocalFont();
             }
 
-            this.loaded = true;
             waterfall.computeIfReady();
         } catch (error) {
             this.error = error;
@@ -63,11 +67,21 @@ class WFont {
         }
     }
 
-    compute(wordlist, casing, granularity) {
+    compute(wordlist, casing, granularity, selectedFeatures) {
         const lengths = {};
         const c = document.createElement('canvas');
         const ctx = c.getContext('2d');
         ctx.font = `${waterfall.fontSize}px "${this.fullFontName}"`;
+
+        // Apply OpenType features
+        if (selectedFeatures.length > 0) {
+            ctx.font = `${waterfall.fontSize}px "${this.fullFontName}"`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            const featureSettings = selectedFeatures.map(f => `"${f}" 1`).join(', ');
+            ctx.font = ctx.font.replace(/"/g, '');
+            ctx.font = `${ctx.font.split(')')[0]}) ${featureSettings}`;
+        }
 
         for (const word of wordlist) {
             if (!word) continue;
@@ -90,12 +104,47 @@ class WFont {
         this.computed = lengths;
         waterfall.updateUI();
     }
+
+    setupFont(ctx, selectedFeatures) {
+        if (this.opentypeFont) {
+            // Use OpenType.js to apply features
+            const path = this.opentypeFont.getPath(text, 0, 0, waterfall.fontSize);
+            path.fill = 'black';
+            ctx.save();
+            ctx.translate(0, waterfall.fontSize);
+            path.draw(ctx);
+            ctx.restore();
+        } else {
+            // Fallback to standard canvas text rendering
+            ctx.font = `${waterfall.fontSize}px "${this.fullFontName}"`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+
+            if (selectedFeatures.length > 0) {
+                const featureSettings = selectedFeatures.map(f => `"${f}" 1`).join(', ');
+                ctx.font = `${ctx.font.split(')')[0]}) ${featureSettings}`;
+            }
+        }
+    }
+
+    measureTextWidth(ctx, text) {
+        if (this.opentypeFont) {
+            // Use OpenType.js to measure text
+            const path = this.opentypeFont.getPath(text, 0, 0, waterfall.fontSize);
+            const bbox = path.getBoundingBox();
+            return Math.ceil(bbox.x2 - bbox.x1);
+        } else {
+            // Fallback to standard canvas text measurement
+            const metrics = ctx.measureText(text);
+            return Math.ceil(metrics.width);
+        }
+    }
 }
 
 class Waterfall {
     constructor() {
         this.done = false;
-        this.fontSize = 60;
+        this.fontSize = 80;
         this.lineHeight = 1; // Add this line
         this.casing = 'ic'; // Default casing
         this.granularity = 5;
@@ -115,11 +164,16 @@ class Waterfall {
 
         this.fonts = [];
 
+        this.features = new Set();
+        console.log('Waterfall instance created');
+
         this.init();
         this.fontInput = new FontInput(this);
 
         this.currentResultsCount = 0;
         this.currentFont = null; // Add this to keep track of the current font
+        this.filterLetters = []; // Add this line to store the filter letters
+        this.featureDescriptions = new Map();
     }
 
     init() {
@@ -128,6 +182,7 @@ class Waterfall {
     }
 
     setupEventListeners() {
+        console.log('Setting up event listeners');
         document.addEventListener("keydown", event => {
             if (event.isComposing || event.keyCode === 229) return;
             if (event.keyCode === 16) this.shiftMode = true;
@@ -180,6 +235,39 @@ class Waterfall {
         if (resultsCountDisplay) {
             resultsCountDisplay.textContent = this.resultsCount;
             this.updateUI();
+        }
+
+        const lettersInput = document.getElementById('letters');
+        if (lettersInput) {
+            lettersInput.addEventListener('input', (e) => {
+                this.filterLetters = e.target.value.split(',').map(letter => letter.trim().toLowerCase());
+                this.computeIfReady();
+            });
+        }
+
+        const loadLocalFontsButton = document.getElementById('loadLocalFonts');
+        if (loadLocalFontsButton) {
+            loadLocalFontsButton.addEventListener('click', async () => {
+                const fonts = await window.queryLocalFonts();
+                // Handle local fonts selection...
+                // When a font is selected, you can use it like this:
+                // const fontData = await selectedFont.blob();
+                // const font = await opentype.load(fontData);
+                // this.updateFeatures(font);
+            });
+        }
+
+        const fontUpload = document.getElementById('fontUpload');
+        if (fontUpload) {
+            fontUpload.addEventListener('change', (e) => {
+                console.log('Font file selected');
+                const file = e.target.files[0];
+                if (file) {
+                    this.loadFont(file);
+                }
+            });
+        } else {
+            console.error('Font upload input not found');
         }
     }
 
@@ -244,11 +332,34 @@ class Waterfall {
 
     compute() {
         console.log("computing");
+        const selectedFeatures = this.getSelectedFeatures();
         for (const font of this.fonts) {
-            font.compute(this.dict.dict, this.casing, this.granularity);
+            const filteredDict = this.filterDictionary(this.dict.dict);
+            font.compute(filteredDict, this.casing, this.granularity, selectedFeatures);
         }
         this.done = true;
         this.updateUI();
+    }
+
+    getSelectedFeatures() {
+        const selectedFeatures = [];
+        this.features.forEach(feature => {
+            const checkbox = document.getElementById(feature);
+            if (checkbox && checkbox.checked) {
+                selectedFeatures.push(feature);
+            }
+        });
+        console.log('Selected features:', selectedFeatures);
+        return selectedFeatures;
+    }
+
+    filterDictionary(wordlist) {
+        if (this.filterLetters.length === 0) {
+            return wordlist;
+        }
+        return wordlist.filter(word => 
+            this.filterLetters.every(letter => word.toLowerCase().includes(letter))
+        );
     }
 
     updateLengthFromWord() {
@@ -288,6 +399,8 @@ class Waterfall {
             resultsContainer.innerHTML = '';
             this.currentResultsCount = 0;
             
+            const selectedFeatures = this.getSelectedFeatures();
+            
             for (const font of this.fonts) {
                 if (font.computed) {
                     this.currentFont = font;
@@ -298,6 +411,11 @@ class Waterfall {
                     fontElement.style.fontFamily = `"${font.fullFontName}"`;
                     fontElement.style.fontSize = `${this.fontSize}px`;
                     fontElement.style.lineHeight = this.lineHeight;
+                    
+                    if (selectedFeatures.length > 0) {
+                        const featureSettings = selectedFeatures.map(f => `"${f}" 1`).join(', ');
+                        fontElement.style.fontFeatureSettings = featureSettings;
+                    }
                     
                     if (results.length > 0) {
                         fontElement.innerHTML = results.join('<br>');
@@ -333,9 +451,10 @@ class Waterfall {
         this.computeIfReady();
     }
 
-    addLocalFont(family, style) {
-        const newFont = new WFont(family, null, style);
+    addLocalFont(postScriptName, opentypeFont, style) {
+        const newFont = new WFont(postScriptName, null, style, opentypeFont);
         this.fonts = [newFont]; // Replace existing fonts with the new local font
+        this.updateFeatures(opentypeFont);
         this.computeIfReady();
     }
 
@@ -358,6 +477,90 @@ class Waterfall {
 
     getPlaceholderText(fontName) {
         return `...`;
+    }
+
+    async loadFont(file) {
+        console.log('Loading font:', file.name);
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const font = await opentype.parse(arrayBuffer);
+            console.log('Font loaded successfully:', font.names.fullName);
+            this.updateFeatures(font);
+        } catch (error) {
+            console.error('Error loading font:', error);
+        }
+    }
+
+    updateFeatures(font) {
+        console.log('Updating features for font:', font.names.fullName);
+        this.features.clear();
+        this.featureDescriptions.clear();
+        const gsub = font.tables.gsub;
+        if (gsub) {
+            console.log('GSUB table found');
+            gsub.features.forEach(feature => {
+                console.log('Checking feature:', feature.tag);
+                if (feature.tag.startsWith('ss') || feature.tag === 'liga') {
+                    this.features.add(feature.tag);
+                    // Store the feature name if available
+                    if (feature.name) {
+                        this.featureDescriptions.set(feature.tag, feature.name);
+                    }
+                    console.log('Added feature:', feature.tag, feature.name);
+                }
+            });
+        } else {
+            console.log('No GSUB table found in the font');
+        }
+        console.log('Final features set:', Array.from(this.features));
+        console.log('Feature descriptions:', this.featureDescriptions);
+        this.generateFeatureCheckboxes();
+    }
+
+    generateFeatureCheckboxes() {
+        console.log('Generating feature checkboxes');
+        const featuresDiv = document.getElementById('features');
+        if (!featuresDiv) {
+            console.error('Features div not found');
+            return;
+        }
+        featuresDiv.innerHTML = ''; // Clear existing checkboxes
+
+        if (this.features.size === 0) {
+            console.log('No features to generate checkboxes for');
+            featuresDiv.textContent = 'No OpenType features detected';
+            return;
+        }
+
+        this.features.forEach(feature => {
+            console.log('Creating checkbox for feature:', feature);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = feature;
+            checkbox.name = feature;
+            checkbox.value = 'true';
+            checkbox.className = 'input-checkbox';
+
+            const label = document.createElement('label');
+            label.htmlFor = feature;
+            label.textContent = feature.toUpperCase();
+            label.className = 't__xxs';
+
+            // Add title attribute with feature description if available
+            const description = this.featureDescriptions.get(feature);
+            if (description) {
+                label.title = description;
+            }
+
+            featuresDiv.appendChild(checkbox);
+            featuresDiv.appendChild(label);
+
+            checkbox.addEventListener('change', () => {
+                console.log('Feature checkbox changed:', feature, checkbox.checked);
+                this.computeIfReady();
+            });
+        });
+        console.log('Feature checkboxes generated');
     }
 }
 
@@ -423,7 +626,7 @@ class FontInput {
 
             this.populateFontFamilySelector(Array.from(fontFamilies).sort(), availableFonts);
             this.fontFamilySelector.addEventListener('change', () => this.updateFontStyleSelector(availableFonts));
-            this.fontStyleSelector.addEventListener('change', () => this.updateWaterfallFont());
+            this.fontStyleSelector.addEventListener('change', () => this.updateWaterfallFont(availableFonts));
 
             this.loadLocalFontsButton.style.display = 'none';
             this.fontSelectors.style.display = 'block';
@@ -449,15 +652,31 @@ class FontInput {
         this.fontStyleSelector.innerHTML = styles.map(style => 
             `<option value="${style}">${style}</option>`
         ).join('');
-        this.updateWaterfallFont();
+        this.updateWaterfallFont(availableFonts);
     }
 
-    updateWaterfallFont() {
+    async updateWaterfallFont(availableFonts) {
         const family = this.fontFamilySelector.value;
         const style = this.fontStyleSelector.value;
-        this.waterfall.addLocalFont(family, style);
+        const selectedFont = availableFonts.find(f => f.family === family && f.style === style);
+        
+        if (selectedFont) {
+            try {
+                const fontData = await selectedFont.blob();
+                const arrayBuffer = await fontData.arrayBuffer();
+                const font = opentype.parse(arrayBuffer);
+                
+                const postScriptName = font.names.postScriptName?.en || font.names.fullName?.en || `${family}-${style}`;
+                console.log('Loading font:', postScriptName);
+                
+                this.waterfall.addLocalFont(postScriptName, font, style);
+            } catch (error) {
+                console.error('Error loading font with OpenType.js:', error);
+            }
+        }
     }
 }
 
 // Initialize the Waterfall instance
 const waterfall = new Waterfall();
+console.log('Waterfall instance created and event listeners set up');

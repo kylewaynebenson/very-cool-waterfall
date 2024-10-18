@@ -31,12 +31,14 @@
                     <label class="btn btn-secondary" for="dictUploader">Dictionary.txt</label>
                     <input class="input-file" type="file" id="dictUploader" accept=".txt" ">
                 </div>
+        
             </div>
-            <div id="results"></div>
-            <div id="controls">
+            <div id="results">
+            </div>
+            <div id="controls" class="d-flex flex-column gap-sm">
                 <div class="d-flex flex-row gap-sm align-items-center">
                     <div class="d-flex flex-row gap-sm align-items-center">
-                        <label class="t__xxs color-light" for="targetWord">Set by</label>
+                        <label class="t__xxs color-light" for="targetWord">Set width by</label>
                         <input class="input-text" type="text" id="targetWord" placeholder="Word">
                     </div>
                     <div class="d-flex-grow">
@@ -46,15 +48,27 @@
                             <span class="t__xxs" id="runlengthDisplay">500</span>
                         </div>
                     </div>
-
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <label class="t__xxs" for="letters">Includes</label>
+                        <input class="input-text" type="text" id="letters" placeholder="L,e,t,t,e,r,s">
+                    </div>
+                </div>
+                <div class="d-flex flex-row gap-sm align-items-center">
+                    <label class="t__xxs color-light" for="casing">Case</label>
                     <select class="input-select" id="casing">
                         <option value="ic">Capitalized</option>
                         <option value="uc">Uppercase</option>
                         <option value="lc">Lowercase</option>
                     </select>
+                    <span class="t__xxs color-light">Features</span>
+                    <div id="features" class="d-flex flex-row gap-sm align-items-center">
+                        <input class="input-checkbox" type="checkbox" id="ss01" name="ss01" value="true">
+                        <label class="t__xxs" for="ss01">SS01</label>
+                    </div>
                 </div>
             </div>
         </div>
+        <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
         <script src="dist/js/script.js"></script>
     </body>
 </html>
