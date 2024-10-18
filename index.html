@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>VC Waterfall</title>
+        <link rel="stylesheet" href="dist/css/style.css">
+        <!-- This code was hard lifted from https://workshop.mass-driver.com/waterfall-->
+    </head>
+    <body>
+        <div id="waterfall">
+            <div id="uploadFont" class="d-flex flex-columns gap-sm align-items-center">
+                <span class="t__xxs color-light">Upload</span>
+                <div>
+                    <label class="btn btn-primary" for="fontUpload">Font File</label>
+                    <input class="input-file" type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
+                </div>
+                <span class="t__xxs color-light">or</span>
+                <div>
+                    <button class="btn btn-secondary" id="loadLocalFonts">Load Local Fonts</button>
+                    <div id="fontSelectors" style="display: none;">
+                        <label class="t__xxs" for="fontFamilySelector">Font Family</label>
+                        <select class="input-select" id="fontFamilySelector"></select>
+
+                        <label class="t__xxs" for="fontStyleSelector">Font Style</label>
+                        <select class="input-select" id="fontStyleSelector"></select>
+                    </div>
+                </div>
+                <div class="d-flex flex-row gap-sm d-flex-grow text-right align-items-center">
+                    <span class="t__xxs color-light">or upload</span>
+                    <label class="btn btn-secondary" for="dictUploader">Dictionary.txt</label>
+                    <input class="input-file" type="file" id="dictUploader" accept=".txt" ">
+                </div>
+            </div>
+            <div id="results"></div>
+            <div id="controls">
+                <div class="d-flex flex-row gap-sm align-items-center">
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <label class="t__xxs color-light" for="targetWord">Set by</label>
+                        <input class="input-text" type="text" id="targetWord" placeholder="Word">
+                    </div>
+                    <div class="d-flex-grow">
+                        <div class="d-flex flex-columns gap-sm align-items-center">
+                            <label class="t__xxs" for="runlength">or</label>
+                            <input class="range-slider" type="range" id="runlength" min="10" max="1200" step="1" value="500">
+                            <span class="t__xxs" id="runlengthDisplay">500</span>
+                        </div>
+                    </div>
+
+                    <select class="input-select" id="casing">
+                        <option value="ic">Capitalized</option>
+                        <option value="uc">Uppercase</option>
+                        <option value="lc">Lowercase</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <script src="dist/js/script.js"></script>
+    </body>
+</html>
