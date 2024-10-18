@@ -199,7 +199,7 @@ class Waterfall {
                 text = await source.text();
             } else {
                 this.dict.manual = false;
-                const response = await fetch('/words.txt');
+                const response = await fetch('dist/words.txt');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
