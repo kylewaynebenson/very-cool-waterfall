@@ -9,64 +9,90 @@
     </head>
     <body>
         <div id="waterfall">
-            <div id="uploadFont" class="d-flex flex-columns gap-sm align-items-center">
-                <span class="t__xxs color-light">Upload</span>
-                <div>
-                    <label class="btn btn-primary" for="fontUpload">Font File</label>
-                    <input class="input-file" type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
-                </div>
-                <span class="t__xxs color-light">or</span>
-                <div>
-                    <button class="btn btn-secondary" id="loadLocalFonts">Load Local Fonts</button>
-                    <div id="fontSelectors" style="display: none;">
-                        <label class="t__xxs" for="fontFamilySelector">Font Family</label>
-                        <select class="input-select" id="fontFamilySelector"></select>
-
-                        <label class="t__xxs" for="fontStyleSelector">Font Style</label>
-                        <select class="input-select" id="fontStyleSelector"></select>
+            
+            <div id="controls" class="d-flex flex-column gap-xl">
+                <div id="uploadFont" class="d-flex flex-column gap-sm">
+                    <h6 class="m-0">1. Select font</h6>
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <span class="t__xxs color-light">Upload</span>
+                        <label class="btn btn-primary" for="fontUpload">Font File</label>
+                        <input class="input-file" type="file" id="fontUpload" accept=".ttf,.otf,.woff,.woff2">
+                    </div>
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <span class="hide">Choose OS Fonts</span>
+                        <button class="btn btn-tertiary" id="loadLocalFonts">Select local</button>
+                        <div id="fontSelectors" class="d-flex flex-column gap-sm hide">
+                            <div class="d-flex flex-row gap-sm">
+                                <label class="t__xxs" for="fontFamilySelector">Family</label>
+                                <select class="input-select" id="fontFamilySelector"></select>
+                            </div>
+                            <div class="d-flex flex-row gap-sm">
+                                <label class="t__xxs" for="fontStyleSelector">Style</label>
+                                <select class="input-select" id="fontStyleSelector"></select>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="d-flex flex-row gap-sm d-flex-grow text-right align-items-center">
-                    <span class="t__xxs color-light">or upload</span>
-                    <label class="btn btn-secondary" for="dictUploader">Dictionary.txt</label>
-                    <input class="input-file" type="file" id="dictUploader" accept=".txt" ">
-                </div>
-        
-            </div>
-            <div id="results">
-            </div>
-            <div id="controls" class="d-flex flex-column gap-sm">
-                <div class="d-flex flex-row gap-sm align-items-center">
+                <div class="d-flex flex-column gap-sm disabled">
+                    <h6 class="m-0">2. Choose dictionary</h6>
                     <div class="d-flex flex-row gap-sm align-items-center">
-                        <label class="t__xxs color-light" for="targetWord">Set width by</label>
+                        <label class="t__xxs color-light" for="wordList">Language</label>
+                        <select class="btn" id="wordList">
+                        <option value="default">Basic Latin</option>
+                        <option value="cyrillic">Cyrillic</option>
+                        <option value="greek">Greek</option>
+                        <option value="latin-extended">Latin Extended</option>
+                    </select>
+                    </div>
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <span class="hide">Upload</span>
+                        <label class="btn btn-tertiary" for="dictUploader">Upload Dictionary.txt</label>
+                        <input class="input-file" type="file" id="dictUploader" accept=".txt" ">
+                    </div>
+                </div>
+                <div class="d-flex flex-column gap-sm disabled">
+                    <h6 class="m-0">3. Set width</h6>
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <label class="t__xxs color-light hide" for="targetWord">Word</label>
                         <input class="input-text" type="text" id="targetWord" placeholder="Word">
                     </div>
                     <div class="d-flex-grow">
                         <div class="d-flex flex-columns gap-sm align-items-center">
-                            <label class="t__xxs" for="runlength">or</label>
+                            <label class="t__xxs color-light hide" for="runlength">Pixels</label>
                             <input class="range-slider" type="range" id="runlength" min="10" max="1200" step="1" value="500">
-                            <span class="t__xxs" id="runlengthDisplay">500</span>
+                            <input class="t__xxs input-text input-number" type="number" id="runlengthDisplay" value="500" min="10" max="1200">
                         </div>
                     </div>
-                    <div class="d-flex flex-row gap-sm align-items-center">
-                        <label class="t__xxs" for="letters">Includes</label>
+                </div>
+                <div class="d-flex flex-column gap-sm disabled">
+                    <h6 class="m-0">4. Filter</h6>
+                    <div>
+                        <label class="t__xxs hide" for="letters">Filter</label>
                         <input class="input-text" type="text" id="letters" placeholder="L,e,t,t,e,r,s">
                     </div>
+                    <div>
+                        <label class="t__xxs hide" for="randomize">Randomize order</label>
+                        <button class="btn btn-secondary" id="randomize">Randomize</button>
+                    </div>
                 </div>
-                <div class="d-flex flex-row gap-sm align-items-center">
-                    <label class="t__xxs color-light" for="casing">Case</label>
-                    <select class="input-select" id="casing">
+                <div class="d-flex flex-column gap-sm disabled">
+                    <h6 class="m-0">5. Style</h6>
+                    <div class="d-flex flex-row gap-sm align-items-center">
+                        <label class="t__xxs color-light" for="casing">Case</label>
+                        <select class="input-select" id="casing">
                         <option value="ic">Capitalized</option>
                         <option value="uc">Uppercase</option>
-                        <option value="lc">Lowercase</option>
-                    </select>
-                    <span class="t__xxs color-light">Features</span>
-                    <div id="features" class="d-flex flex-row gap-sm align-items-center">
-                        <input class="input-checkbox" type="checkbox" id="ss01" name="ss01" value="true">
-                        <label class="t__xxs" for="ss01">SS01</label>
+                            <option value="lc">Lowercase</option>
+                        </select>
+                    </div>
+                    <div class="d-flex flex-column gap-sm">
+                        <span class="t__xxs color-light">Features</span>
+                        <div id="features" class="d-flex flex-wrap gap-sm">
+                        </div>
                     </div>
                 </div>
             </div>
+            <div id="results"></div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/opentype.js@latest/dist/opentype.min.js"></script>
         <script src="dist/js/script.js"></script>

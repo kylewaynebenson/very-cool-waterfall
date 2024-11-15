@@ -1,22 +1,30 @@
 #waterfall {
-  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 3.5fr;
+  height: 100vh;
+  align-items: stretch;
+  overflow-y: auto;
 }
 #uploadFont {
-  padding: var(--spacing-sm);
+  
 }
 #controls {
-  position: fixed;
-  bottom: 0;
+  position: sticky;
+  top: 0;
   left: 0;
-  right: 0;
-  background: white;
+  max-width: 20rem;
   padding: var(--spacing-sm);
-  border-top: var(--border-width-thin) solid var(--border-color-light);
+  height: fit-content;
 }
 #results {
-  padding-bottom: 30px;
-  max-width: 82rem;
   width: 100%;
-  margin: 0 auto;
   text-align: center;
+  overflow-y: auto;
+}
+#features {
+  flex-wrap: wrap;
+}
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }

@@ -3,6 +3,7 @@
 :root {
 	// Spacing
 	--idiot-unit: 8px;
+	--spacing-xxs: calc(var(--idiot-unit) * 0.25);  // 2px
 	--spacing-xs: calc(var(--idiot-unit) * 0.5);  // 4px
 	--spacing-sm: var(--idiot-unit);        // 8px
 	--spacing-md: calc(var(--idiot-unit) * 2);    // 16px

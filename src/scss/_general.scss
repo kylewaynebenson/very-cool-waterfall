@@ -94,6 +94,11 @@ a {
   }
 }
 
+.btn-tertiary {
+  padding: var(--spacing-xxs) var(--spacing-xs);
+  background-color: transparent;
+}
+
 // Chip buttons
 .chip {
 	align-items: center;
@@ -227,6 +232,10 @@ a {
     color: var(--button-hover-text);
     border: 2px solid var(--button-hover-bg);
   }
+}
+
+.input-number {
+  border: 2px solid transparent;
 }
 
 .input-select {

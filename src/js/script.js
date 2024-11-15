@@ -1,4 +1,3 @@
-// Add this function at the top of your script, outside of any class
 function applyCase(word, casing) {
     if (!word) return '';
     switch (casing) {
@@ -145,14 +144,19 @@ class Waterfall {
     constructor() {
         this.done = false;
         this.fontSize = 80;
-        this.lineHeight = 1; // Add this line
-        this.casing = 'ic'; // Default casing
+        this.lineHeight = 1;
+        this.casing = 'ic';
         this.granularity = 5;
-        this.resultsCount = 10; // Default value
-        this._runlength = 500; // Default value
+        this.resultsCount = 10;
+        this._runlength = 500;
         this.seed = 1;
         this.shiftMode = false;
         this.targetWord = '';
+        this.currentWordList = 'default';
+        this.isShuffled = false;
+        this.filterLetters = [];
+        this.features = new Set();
+        this.featureDescriptions = new Map();
 
         this.dict = {
             loading: false,
@@ -163,17 +167,9 @@ class Waterfall {
         };
 
         this.fonts = [];
-
-        this.features = new Set();
-        console.log('Waterfall instance created');
-
+        
         this.init();
         this.fontInput = new FontInput(this);
-
-        this.currentResultsCount = 0;
-        this.currentFont = null; // Add this to keep track of the current font
-        this.filterLetters = []; // Add this line to store the filter letters
-        this.featureDescriptions = new Map();
     }
 
     init() {
@@ -192,11 +188,45 @@ class Waterfall {
             if (event.keyCode === 16) this.shiftMode = false;
         });
 
-        const runlengthInput = document.getElementById('runlength');
-        if (runlengthInput) {
-            runlengthInput.addEventListener('input', (e) => {
-                this.runlength = parseInt(e.target.value);
-                this.updateUI();
+        const runlengthSlider = document.getElementById('runlength');
+        const runlengthDisplay = document.getElementById('runlengthDisplay');
+        
+        if (runlengthSlider && runlengthDisplay) {
+            let debounceTimer;
+
+            // Update display when slider moves (without immediate computation)
+            runlengthSlider.addEventListener('input', (e) => {
+                runlengthDisplay.value = e.target.value;
+                this._runlength = parseInt(e.target.value);
+            });
+
+            // Compute only when slider stops
+            runlengthSlider.addEventListener('change', (e) => {
+                this.computeIfReady();
+            });
+
+            // Update slider when display input changes (debounced)
+            runlengthDisplay.addEventListener('input', (e) => {
+                clearTimeout(debounceTimer);
+                let value = parseInt(e.target.value);
+                value = Math.min(Math.max(value, 10), 1200);
+                runlengthSlider.value = value;
+                this._runlength = value;
+                
+                debounceTimer = setTimeout(() => {
+                    this.computeIfReady();
+                }, 300); // Wait 300ms after last input before computing
+            });
+
+            // Clean up invalid input when focus is lost
+            runlengthDisplay.addEventListener('blur', (e) => {
+                let value = parseInt(e.target.value);
+                if (isNaN(value)) value = 500;
+                value = Math.min(Math.max(value, 10), 1200);
+                e.target.value = value;
+                runlengthSlider.value = value;
+                this._runlength = value;
+                this.computeIfReady();
             });
         }
 
@@ -269,6 +299,23 @@ class Waterfall {
         } else {
             console.error('Font upload input not found');
         }
+
+        const wordListSelect = document.getElementById('wordList');
+        if (wordListSelect) {
+            wordListSelect.addEventListener('change', (e) => {
+                this.currentWordList = e.target.value;
+                this.loadDict();
+            });
+        }
+
+        const randomizeBtn = document.getElementById('randomize');
+        if (randomizeBtn) {
+            randomizeBtn.addEventListener('click', () => {
+                console.log('Randomize clicked');
+                this.isShuffled = true;
+                this.computeIfReady();
+            });
+        }
     }
 
     async loadDict(source) {
@@ -280,14 +327,28 @@ class Waterfall {
 
             let text;
             if (source) {
+                // Handle manually uploaded dictionary file
                 this.dict.manual = true;
                 if (!source.name.endsWith('.txt')) {
                     throw new Error("Dictionary file must be .txt. (Reverting to default.)");
                 }
                 text = await source.text();
             } else {
+                // Load from predefined word lists
                 this.dict.manual = false;
-                const response = await fetch('dist/words.txt');
+                const wordListPaths = {
+                    'default': 'dist/words.txt',
+                    'cyrillic': 'dist/words-cyrillic.txt',
+                    'greek': 'dist/words-greek.txt',
+                    'latin-extended': 'dist/words-latin-extended.txt'
+                };
+
+                const path = wordListPaths[this.currentWordList];
+                if (!path) {
+                    throw new Error(`Invalid word list: ${this.currentWordList}`);
+                }
+
+                const response = await fetch(path);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
@@ -335,6 +396,15 @@ class Waterfall {
         const selectedFeatures = this.getSelectedFeatures();
         for (const font of this.fonts) {
             const filteredDict = this.filterDictionary(this.dict.dict);
+            
+            // If shuffled is requested, shuffle the filtered dictionary
+            if (this.isShuffled) {
+                for (let i = filteredDict.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filteredDict[i], filteredDict[j]] = [filteredDict[j], filteredDict[i]];
+                }
+            }
+            
             font.compute(filteredDict, this.casing, this.granularity, selectedFeatures);
         }
         this.done = true;
@@ -354,6 +424,7 @@ class Waterfall {
     }
 
     filterDictionary(wordlist) {
+        if (!wordlist) return [];
         if (this.filterLetters.length === 0) {
             return wordlist;
         }
@@ -454,6 +525,12 @@ class Waterfall {
     addLocalFont(postScriptName, opentypeFont, style) {
         const newFont = new WFont(postScriptName, null, style, opentypeFont);
         this.fonts = [newFont]; // Replace existing fonts with the new local font
+        
+        // Enable all controls by removing 'disabled' class
+        document.querySelectorAll('.disabled').forEach(element => {
+            element.classList.remove('disabled');
+        });
+        
         this.updateFeatures(opentypeFont);
         this.computeIfReady();
     }
@@ -485,7 +562,46 @@ class Waterfall {
             const arrayBuffer = await file.arrayBuffer();
             const font = await opentype.parse(arrayBuffer);
             console.log('Font loaded successfully:', font.names.fullName);
+            
+            // Update font upload button text
+            const fontUpload = document.getElementById('fontUpload');
+            const fontLabel = fontUpload?.nextElementSibling;
+            if (fontLabel) {
+                fontLabel.textContent = file.name;
+            }
+
+            // Clear any existing fonts
+            this.fonts = [];
+            
+            // Enable all controls by removing 'disabled' class
+            document.querySelectorAll('.disabled').forEach(element => {
+                element.classList.remove('disabled');
+            });
+            
+            // Hide local font selectors if they're visible
+            const fontSelectors = document.getElementById('fontSelectors');
+            if (fontSelectors) {
+                fontSelectors.style.display = 'none';
+            }
+            
+            // Show the local fonts button again
+            const loadLocalFontsButton = document.getElementById('loadLocalFonts');
+            if (loadLocalFontsButton) {
+                loadLocalFontsButton.style.display = 'block';
+            }
+            
             this.updateFeatures(font);
+            
+            // Select 'default' in word list dropdown and trigger update
+            const wordListSelect = document.getElementById('wordList');
+            if (wordListSelect) {
+                wordListSelect.value = 'default';
+                this.currentWordList = 'default';
+                const event = new Event('change');
+                wordListSelect.dispatchEvent(event);
+                await this.loadDict();
+                this.computeIfReady();
+            }
         } catch (error) {
             console.error('Error loading font:', error);
         }
@@ -562,6 +678,15 @@ class Waterfall {
         });
         console.log('Feature checkboxes generated');
     }
+
+    // Add shuffle method
+    shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
 }
 
 class FontInput {
@@ -630,6 +755,11 @@ class FontInput {
 
             this.loadLocalFontsButton.style.display = 'none';
             this.fontSelectors.style.display = 'block';
+            
+            // Enable controls when font selectors are shown
+            document.querySelectorAll('.disabled').forEach(element => {
+                element.classList.remove('disabled');
+            });
         } catch (err) {
             console.error('Error querying local fonts:', err);
             this.loadLocalFontsButton.textContent = 'Error loading fonts';
@@ -669,6 +799,11 @@ class FontInput {
                 const postScriptName = font.names.postScriptName?.en || font.names.fullName?.en || `${family}-${style}`;
                 console.log('Loading font:', postScriptName);
                 
+                // Enable all controls by removing 'disabled' class
+                document.querySelectorAll('.disabled').forEach(element => {
+                    element.classList.remove('disabled');
+                });
+                
                 this.waterfall.addLocalFont(postScriptName, font, style);
             } catch (error) {
                 console.error('Error loading font with OpenType.js:', error);
@@ -676,7 +811,7 @@ class FontInput {
         }
     }
 }
-
 // Initialize the Waterfall instance
 const waterfall = new Waterfall();
 console.log('Waterfall instance created and event listeners set up');
+
