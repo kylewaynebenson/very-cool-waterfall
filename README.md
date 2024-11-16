@@ -9,5 +9,11 @@
 - Ability to shuffle/randomize the list
 - Styling for stylistic sets
 
+## Use cases
+
+- Proof or text your font with random words
+- Generate words for specimen
+- Poetry! Of course POETRY
+
 ## Credits
  Concept and logic was borrowed from [Mass Driver](https://mass-driver.com/workshop/).
