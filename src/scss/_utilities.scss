@@ -8,8 +8,6 @@
 .d-flex-grow { flex-grow: 1; }
 .d-none { display: none; }
 
-
-
 .flex-column { flex-direction: column; }
 .flex-row { flex-direction: row; }
 .flex-wrap { flex-wrap: wrap; }
@@ -33,23 +31,12 @@
 .gap-xl { gap: var(--spacing-xl); }
 .gap-xxl { gap: var(--spacing-xxl); }
 
-// Text alignment
-.t__left, .text-left { text-align: left; }
-.t__center, .text-center { text-align: center; }
-.t__right, .text-right { text-align: right; }
+.p-sm { padding: var(--spacing-sm); }
+.p-md { padding: var(--spacing-md); }
+.p-lg { padding: var(--spacing-lg); }
+.p-xl { padding: var(--spacing-xl); }
+.p-xxl { padding: var(--spacing-xxl); }
 
-// Text transformation
-.text-uppercase { text-transform: uppercase; }
-.text-lowercase { text-transform: lowercase; }
-.text-capitalize { text-transform: capitalize; }
-
-// Font weight
-.font-weight-light { font-weight: 300; }
-.font-weight-normal { font-weight: 400; }
-.font-weight-bold { font-weight: 700; }
-
-// Font size
-.small { font-size: var(--font-size-small, 0.8em); }
 
 // Margin and Padding
 @each $prop, $abbrev in (margin: m, padding: p, gap: g) {

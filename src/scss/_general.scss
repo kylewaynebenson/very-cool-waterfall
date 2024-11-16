@@ -115,10 +115,9 @@ a {
 	text-overflow: ellipsis;
 	vertical-align: middle;
   cursor: pointer;
-  
-	&.visited::before {
-	  content: "✓";
-	}
+  input, label {
+    cursor: pointer !important;
+  }
 }
 
 .form-control {

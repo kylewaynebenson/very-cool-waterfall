@@ -581,13 +581,13 @@ class Waterfall {
             // Hide local font selectors if they're visible
             const fontSelectors = document.getElementById('fontSelectors');
             if (fontSelectors) {
-                fontSelectors.style.display = 'none';
+                fontSelectors.classList.add('hide');
             }
             
             // Show the local fonts button again
             const loadLocalFontsButton = document.getElementById('loadLocalFonts');
             if (loadLocalFontsButton) {
-                loadLocalFontsButton.style.display = 'block';
+                loadLocalFontsButton.classList.add('hide');
             }
             
             this.updateFeatures(font);
@@ -650,6 +650,11 @@ class Waterfall {
 
         this.features.forEach(feature => {
             console.log('Creating checkbox for feature:', feature);
+            
+            // Create wrapper div with chip classes
+            const chipWrapper = document.createElement('div');
+            chipWrapper.className = 'chip d-flex align-items-center';
+            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = feature;
@@ -668,8 +673,12 @@ class Waterfall {
                 label.title = description;
             }
 
-            featuresDiv.appendChild(checkbox);
-            featuresDiv.appendChild(label);
+            // Append checkbox and label to the wrapper
+            chipWrapper.appendChild(checkbox);
+            chipWrapper.appendChild(label);
+            
+            // Append the wrapper to the features div
+            featuresDiv.appendChild(chipWrapper);
 
             checkbox.addEventListener('change', () => {
                 console.log('Feature checkbox changed:', feature, checkbox.checked);
@@ -753,8 +762,8 @@ class FontInput {
             this.fontFamilySelector.addEventListener('change', () => this.updateFontStyleSelector(availableFonts));
             this.fontStyleSelector.addEventListener('change', () => this.updateWaterfallFont(availableFonts));
 
-            this.loadLocalFontsButton.style.display = 'none';
-            this.fontSelectors.style.display = 'block';
+            this.loadLocalFontsButton.classList.add('hide');
+            this.fontSelectors.classList.remove('hide');
             
             // Enable controls when font selectors are shown
             document.querySelectorAll('.disabled').forEach(element => {

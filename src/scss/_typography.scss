@@ -30,6 +30,7 @@ h6, .h6 { font-size: var(--h6-font-size); }
 .t__s { font-size: 1.25rem; line-height: 1.4; }
 .t__xs { font-size: 1rem; line-height: 1.4; }
 .t__xxs { font-size: .875rem; line-height: 1.4; }
+.t__xxxs { font-size: .75rem; line-height: 1.4; }
 
 .text-uppercase { text-transform: uppercase; }
 .text-lowercase { text-transform: lowercase; }
@@ -52,4 +53,6 @@ h6, .h6 { font-size: var(--h6-font-size); }
 .text-danger { color: var(--error-color); }
 
 .color-light { color: var(--text-color-light); }
+.color-lightest { color: var(--text-color-lightest); }
 // Add more typography styles as needed
+
