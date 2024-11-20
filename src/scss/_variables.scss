@@ -15,6 +15,7 @@
 	--input-border-radius: calc(var(--idiot-unit) * 0.5);  // 4px
 
 	// Base colors
+	--white: #fff;
 	--idiot-white: #f9f4f2;
 	--idiot-black: #061117;
 	--idiot-yellow: #efba16;
@@ -80,6 +81,7 @@
   
   [data-theme="dark"] {
 	color-scheme: dark;
+	--white: #1c1c1e;
 	--primary-color:var(--idiot-blue);
 	--primary-color-dark:var(--idiot-blue-dark);
 

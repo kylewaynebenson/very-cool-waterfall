@@ -190,14 +190,16 @@ class Waterfall {
 
         const runlengthSlider = document.getElementById('runlength');
         const runlengthDisplay = document.getElementById('runlengthDisplay');
+        const targetWordInput = document.getElementById('targetWord');
         
-        if (runlengthSlider && runlengthDisplay) {
+        if (runlengthSlider && runlengthDisplay && targetWordInput) {
             let debounceTimer;
 
             // Update display when slider moves (without immediate computation)
             runlengthSlider.addEventListener('input', (e) => {
                 runlengthDisplay.value = e.target.value;
                 this._runlength = parseInt(e.target.value);
+                targetWordInput.value = ''; // Clear target word when manually adjusting
             });
 
             // Compute only when slider stops
@@ -212,10 +214,11 @@ class Waterfall {
                 value = Math.min(Math.max(value, 10), 1200);
                 runlengthSlider.value = value;
                 this._runlength = value;
+                targetWordInput.value = ''; // Clear target word when manually adjusting
                 
                 debounceTimer = setTimeout(() => {
                     this.computeIfReady();
-                }, 300); // Wait 300ms after last input before computing
+                }, 300);
             });
 
             // Clean up invalid input when focus is lost
@@ -228,6 +231,17 @@ class Waterfall {
                 this._runlength = value;
                 this.computeIfReady();
             });
+
+            // Update width from target word
+            targetWordInput.addEventListener('input', (e) => {
+                const word = e.target.value.trim();
+                if (word) {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        this.updateRunlengthFromWord(word);
+                    }, 300);
+                }
+            });
         }
 
         const casingSelect = document.getElementById('casing');
@@ -235,14 +249,6 @@ class Waterfall {
             casingSelect.addEventListener('change', (e) => {
                 this.casing = e.target.value;
                 this.computeIfReady();
-            });
-        }
-
-        const targetWordInput = document.getElementById('targetWord');
-        if (targetWordInput) {
-            targetWordInput.addEventListener('input', (e) => {
-                const word = e.target.value.trim();
-                this.updateRunlengthFromWord(word);
             });
         }
 
@@ -454,7 +460,15 @@ class Waterfall {
         const width = ctx.measureText(word).width;
         const newRunlength = Math.ceil(width);
 
-        this.runlength = newRunlength; // This will trigger the setter
+        // Update all related inputs
+        const runlengthSlider = document.getElementById('runlength');
+        const runlengthDisplay = document.getElementById('runlengthDisplay');
+
+        if (runlengthSlider) runlengthSlider.value = newRunlength;
+        if (runlengthDisplay) runlengthDisplay.value = newRunlength;
+        
+        this._runlength = newRunlength;
+        this.computeIfReady();
     }
 
     updateUI() {
@@ -548,8 +562,20 @@ class Waterfall {
 
     set runlength(value) {
         this._runlength = value;
-        // You might want to trigger some updates here
-        this.updateUI();
+        // Update all UI elements
+        const runlengthSlider = document.getElementById('runlength');
+        const runlengthDisplay = document.getElementById('runlengthDisplay');
+        const targetWordInput = document.getElementById('targetWord');
+
+        if (runlengthSlider) runlengthSlider.value = value;
+        if (runlengthDisplay) runlengthDisplay.value = value;
+        
+        // Only clear target word if it exists and we're not setting from it
+        if (targetWordInput && !targetWordInput.value.trim()) {
+            targetWordInput.value = '';
+        }
+        
+        this.computeIfReady();
     }
 
     getPlaceholderText(fontName) {
